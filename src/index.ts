@@ -185,7 +185,7 @@ async function main() {
     });
 
     const frontend = process.env.FRONTEND_URL ?? "http://localhost:3000";
-return reply.redirect(`${frontend}/Dashboard?token=${sessionToken}`);
+  return reply.redirect(`${frontend}/CommandCenter?token=${sessionToken}`);
   });
 
   await app.listen({ port: PORT, host: "0.0.0.0" });
