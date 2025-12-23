@@ -99,6 +99,7 @@ async function main() {
     const url = getAuthorizeUrl(state);
     return reply.redirect(url);
   });
+  
 // Debug: Get frontend URL
   app.get("/debug/frontend", async () => {
     return {
@@ -116,8 +117,6 @@ async function main() {
       code,
       redirect_uri: process.env.OUTLOOK_REDIRECT_URI!,
       scope: scopes.join(" "),
-    }
-      
     });
 
     const accessToken = tokenResponse.token.access_token as string;
