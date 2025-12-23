@@ -43,17 +43,23 @@ async function main() {
 
   // Auth-only: identify logged-in user via session cookie
   app.get("/api/me", async (req, reply) => {
-    const token = getCookie(req, "session");
-    if (!token) return reply.code(401).send({ ok: false });
-
+    const auth = req.headers.authorization ?? "";
+    const bearer = auth.startsWith("Bearer ") ? auth.slice("Bearer ".length) : null;
+  
+    const cookieToken = getCookie(req, "session");
+    const token = bearer ?? cookieToken;
+  
+    if (!token) return reply.code(401).send({ ok: false, error: "Missing token" });
+  
     const session = await prisma.session.findUnique({
       where: { token },
       include: { user: true },
     });
-
-    if (!session) return reply.code(401).send({ ok: false });
-    if (new Date(session.expiresAt).getTime() < Date.now()) return reply.code(401).send({ ok: false });
-
+  
+    if (!session) return reply.code(401).send({ ok: false, error: "Invalid session" });
+    if (new Date(session.expiresAt).getTime() < Date.now())
+      return reply.code(401).send({ ok: false, error: "Session expired" });
+  
     return reply.send({
       ok: true,
       email: session.user.email,
@@ -177,8 +183,6 @@ async function main() {
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       },
     });
-
-    reply.header("Set-Cookie", `session=${sessionToken}; Path=/; HttpOnly; SameSite=Lax`);
 
     const frontend = process.env.FRONTEND_URL ?? "http://localhost:3000";
 return reply.redirect(`${frontend}/Dashboard?token=${sessionToken}`);
