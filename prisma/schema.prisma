@@ -1,0 +1,66 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+
+  sessions  Session[]
+}
+
+model Partner {
+  id        String   @id @default(cuid())
+  domain    String
+  name      String?
+  createdAt DateTime @default(now())
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  internetMsgId  String?  @unique
+  conversationId String?
+  subject        String?
+  fromEmail      String?
+  toEmails       String?
+  sentAt         DateTime?
+  createdAt      DateTime @default(now())
+}
+model OutlookAccount {
+  id        String   @id @default(cuid())
+  userEmail String   @unique
+  tenantId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tokens OutlookToken?
+}
+
+model OutlookToken {
+  id             String   @id @default(cuid())
+  outlookAccountId String  @unique
+  accessToken    String
+  refreshToken   String
+  expiresAt      DateTime
+  scope          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  outlookAccount OutlookAccount @relation(fields: [outlookAccountId], references: [id], onDelete: Cascade)
+}
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
