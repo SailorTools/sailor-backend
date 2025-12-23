@@ -139,20 +139,46 @@ async function main() {
     }
 
     // Auth-only for now: we don't read inbox; we also don't need real email yet
-    const placeholderEmail = "unknown@outlook";
+  // Resolve real Outlook user identity
+let realEmail = "unknown@outlook";
+let realName: string | null = null;
+
+try {
+  const res = await request(
+    "https://graph.microsoft.com/v1.0/me?$select=displayName,mail,userPrincipalName",
+    {
+      method: "GET",
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }
+  );
+
+  const body = await res.body.json();
+
+  if (res.statusCode < 400) {
+    realName = (body as any).displayName ?? null;
+    realEmail =
+      (body as any).mail ??
+      (body as any).userPrincipalName ??
+      "unknown@outlook";
+  } else {
+    app.log.warn({ body }, "Graph /me failed during OAuth callback");
+  }
+} catch (err) {
+  app.log.warn({ err }, "Graph /me exception during OAuth callback");
+}
 
     // User record
     const user = await prisma.user.upsert({
-      where: { email: placeholderEmail },
+      where: { email: realEmail },
       update: {},
-      create: { email: placeholderEmail },
+      create: { email: realEmail },
     });
 
     // Outlook account + tokens
     const account = await prisma.outlookAccount.upsert({
-      where: { userEmail: placeholderEmail },
+      where: { userEmail: realEmail },
       update: { tenantId: process.env.OUTLOOK_TENANT ?? undefined },
-      create: { userEmail: placeholderEmail, tenantId: process.env.OUTLOOK_TENANT ?? undefined },
+      create: { userEmail: realEmail, tenantId: process.env.OUTLOOK_TENANT ?? undefined },
     });
 
     await prisma.outlookToken.upsert({
