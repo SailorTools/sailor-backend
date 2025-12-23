@@ -106,6 +106,10 @@ async function main() {
       FRONTEND_URL: process.env.FRONTEND_URL ?? null,
     };
   });
+// Debug: Get environment variables
+  app.get("/debug/env", async () => ({
+    FRONTEND_URL: process.env.FRONTEND_URL ?? null,
+  }));
 
   // Outlook OAuth callback: store tokens + create session + redirect to frontend
   app.get("/auth/outlook/callback", async (req, reply) => {
