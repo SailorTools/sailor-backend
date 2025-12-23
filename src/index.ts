@@ -208,6 +208,24 @@ try {
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       },
     });
+// Logout endpoint
+    app.post("/auth/logout", async (req, reply) => {
+      const auth = req.headers.authorization ?? "";
+      const bearer = auth.startsWith("Bearer ") ? auth.slice(7) : null;
+      const cookieToken = getCookie(req, "session");
+      const token = bearer ?? cookieToken;
+    
+      if (token) {
+        await prisma.session.deleteMany({ where: { token } });
+      }
+    
+      reply
+        .header(
+          "Set-Cookie",
+          "session=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax"
+        )
+        .send({ ok: true });
+    });
 
     const frontend = process.env.FRONTEND_URL ?? "http://localhost:3000";
   return reply.redirect(`${frontend}/CommandCenter#token=${sessionToken}`);
