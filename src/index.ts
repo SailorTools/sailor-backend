@@ -9,6 +9,7 @@ import { getAuthorizeUrl, oauthClient, scopes } from "./outlookAuth";
 
 const PORT = Number(process.env.PORT ?? 3005);
 
+
 function requireEnv(name: string) {
   const v = process.env[name];
   if (!v) throw new Error(`${name} is missing in .env`);
@@ -109,6 +110,8 @@ async function main() {
       code,
       redirect_uri: process.env.OUTLOOK_REDIRECT_URI!,
       scope: scopes.join(" "),
+    }
+      
     });
 
     const accessToken = tokenResponse.token.access_token as string;
@@ -166,7 +169,7 @@ async function main() {
     reply.header("Set-Cookie", `session=${sessionToken}; Path=/; HttpOnly; SameSite=Lax`);
 
     const frontend = process.env.FRONTEND_URL ?? "http://localhost:3000";
-    return reply.redirect(`${frontend}/app`);
+return reply.redirect(`${frontend}/Dashboard?token=${sessionToken}`);
   });
 
   await app.listen({ port: PORT, host: "0.0.0.0" });
