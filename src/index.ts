@@ -109,6 +109,7 @@ async function main() {
 // Debug: Get environment variables
   app.get("/debug/env", async () => ({
     FRONTEND_URL: process.env.FRONTEND_URL ?? null,
+    OUTLOOK_REDIRECT_URI: process.env.OUTLOOK_REDIRECT_URI ?? null,
   }));
 
   // Outlook OAuth callback: store tokens + create session + redirect to frontend
