@@ -99,6 +99,12 @@ async function main() {
     const url = getAuthorizeUrl(state);
     return reply.redirect(url);
   });
+// Debug: Get frontend URL
+  app.get("/debug/frontend", async () => {
+    return {
+      FRONTEND_URL: process.env.FRONTEND_URL ?? null,
+    };
+  });
 
   // Outlook OAuth callback: store tokens + create session + redirect to frontend
   app.get("/auth/outlook/callback", async (req, reply) => {
@@ -155,6 +161,8 @@ async function main() {
         scope: scopes.join(" "),
       },
     });
+
+
 
     // Session cookie
     const sessionToken = nanoid(32);
