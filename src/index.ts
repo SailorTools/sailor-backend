@@ -41,6 +41,15 @@ async function main() {
     return { ok: true, outlookAccounts: accounts };
   });
 
+  // Start Outlook OAuth (for CONNECT INBOX flow)
+app.get("/auth/outlook/connect", async (_req, reply) => {
+  const state = `connect_${Math.random().toString(36).slice(2)}`;
+  const url = getAuthorizeUrl(state);
+  return reply.redirect(url);
+});
+
+
+
   // Auth-only: identify logged-in user via session cookie
   app.get("/api/me", async (req, reply) => {
     const auth = req.headers.authorization ?? "";
@@ -120,7 +129,7 @@ async function main() {
 
   // Start Outlook OAuth
   app.get("/auth/outlook/start", async (_req, reply) => {
-    const state = Math.random().toString(36).slice(2);
+    const state = `login_${Math.random().toString(36).slice(2)}`;
     const url = getAuthorizeUrl(state);
     return reply.redirect(url);
   });
@@ -139,7 +148,7 @@ async function main() {
 
   // Outlook OAuth callback: store tokens + create session + redirect to frontend
   app.get("/auth/outlook/callback", async (req, reply) => {
-    const { code } = req.query as { code?: string };
+    const { code, state } = req.query as { code?: string; state?: string };
 
     if (!code) return reply.code(400).send({ ok: false, error: "Missing code" });
 
@@ -229,7 +238,8 @@ try {
     });
 
     const frontend = process.env.FRONTEND_URL ?? "http://localhost:3000";
-  return reply.redirect(`${frontend}/CommandCenter#token=${sessionToken}`);
+    const nextPath = state?.startsWith("connect_") ? "/ConnectInbox" : "/CommandCenter";
+    return reply.redirect(`${frontend}${nextPath}#token=${sessionToken}`);
   });
 
   await app.listen({ port: PORT, host: "0.0.0.0" });
