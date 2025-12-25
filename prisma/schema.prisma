@@ -12,6 +12,7 @@ model User {
   id        String   @id @default(cuid())
   email     String   @unique
   createdAt DateTime @default(now())
+  importSessions ImportSession[]
 
   sessions  Session[]
 }
@@ -63,4 +64,154 @@ model Session {
   expiresAt DateTime
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+model ImportSession {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  provider          String   // "outlook"
+  status            String   // "processing" | "completed" | "failed"
+
+  startedAt         DateTime @default(now())
+  endedAt           DateTime?
+
+  emailsProcessed   Int      @default(0)
+  agentsDiscovered  Int      @default(0)
+  shipmentsExtracted Int     @default(0)
+
+  error             String?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([provider])
+}
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Enums keep our DB values consistent ---
+enum ImportProvider {
+  outlook
+}
+
+enum ImportStatus {
+  processing
+  completed
+  failed
+}
+
+model User {
+  id             String          @id @default(cuid())
+  email          String          @unique
+  createdAt      DateTime        @default(now())
+
+  importSessions ImportSession[]
+  sessions       Session[]
+
+  // optional link to the connected inbox accounts
+  outlookAccounts OutlookAccount[]
+}
+
+model Partner {
+  id        String   @id @default(cuid())
+  domain    String
+  name      String?
+  createdAt DateTime @default(now())
+
+  @@index([domain])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  internetMsgId  String?  @unique
+  conversationId String?
+  subject        String?
+  fromEmail      String?
+  toEmails       String?
+  sentAt         DateTime?
+  createdAt      DateTime @default(now())
+
+  @@index([conversationId])
+  @@index([sentAt])
+}
+
+model OutlookAccount {
+  id        String   @id @default(cuid())
+
+  // The mailbox identity we got from Microsoft (Graph /me)
+  userEmail String   @unique
+
+  // Optional: link the mailbox to a Sailor user in our DB
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  tenantId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 1:1 token row
+  token     OutlookToken?
+}
+
+model OutlookToken {
+  id               String   @id @default(cuid())
+  outlookAccountId String   @unique
+
+  accessToken      String
+  refreshToken     String
+  expiresAt        DateTime
+  scope            String?
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  outlookAccount   OutlookAccount @relation(fields: [outlookAccountId], references: [id], onDelete: Cascade)
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model ImportSession {
+  id                 String         @id @default(cuid())
+  userId             String
+  user               User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  provider           ImportProvider
+  status             ImportStatus
+
+  startedAt          DateTime       @default(now())
+  endedAt            DateTime?
+
+  emailsProcessed    Int            @default(0)
+  agentsDiscovered   Int            @default(0)
+  shipmentsExtracted Int            @default(0)
+
+  error              String?
+
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([provider])
+  @@index([startedAt])
 }
